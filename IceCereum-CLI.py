@@ -82,7 +82,7 @@ class IceCereumCLI(cmd2.Cmd):
             self.poutput("List of available wallets:")
             self.poutput(str(wallets))
 
-        return
+        return None
 
 
     def create_wallet(self, wallet_name : str):
@@ -130,11 +130,12 @@ class IceCereumCLI(cmd2.Cmd):
         del mnemonic, unit_words
         os.system('cls' if os.name=='nt' else 'clear')
 
+        self.current_WH = wh
+
         self.poutput("Your wallet: %s has been created!" % wallet_name)
         self.poutput("Wallet Address: %s" % self.current_WH.address)
         self.poutput("\nDo NOT share the 12 words or the wallet file")
 
-        self.current_WH = wh
 
         self.current_WH.log_histfile(created = True)
 
@@ -229,6 +230,68 @@ class IceCereumCLI(cmd2.Cmd):
             return None
 
         self.poutput("Balance : %f" % float(response["balance"]))
+
+        return None
+
+
+    ############################################################################
+    ############################### NICK UTILS #################################
+    ############################################################################
+    nick_parser = ArgumentParser()
+    nick_subparser = nick_parser.add_subparsers(dest="nickaction")
+
+    nick_create = nick_subparser.add_parser("create")
+    nick_create.add_argument("name", type=str)
+    nick_create.add_argument("address", type=str)
+
+    nick_delete = nick_subparser.add_parser("delete")
+    nick_delete.add_argument("name", type=str)
+
+    nick_subparser.add_parser("list")
+
+    @cmd2.with_argparser(nick_parser)
+    @wallet_loaded
+    def do_nick(self, args):
+        if args.nickaction == "list":
+            self.nick_list()
+        elif args.nickaction == "create":
+            self.nick_create(args.name, args.address)
+        elif args.nickaction == "delete":
+            self.nick_delete(args.name)
+
+        return None
+
+    def nick_create(self, name : str, addr : str):
+        retval = self.current_WH.CreateNick(name, addr)
+        if retval == -1:
+            self.perror("Nick already exists")
+            self.poutput("Choose a different name")
+            return None
+        elif retval == -2:
+            self.perror("Supplied address is not a valid address")
+            self.poutput("Verify that the address you supplied is correct")
+            return None
+        elif retval == 1:
+            self.poutput("Nick created!")
+            return None
+
+    def nick_delete(self, name : str):
+        nick, addr = self.current_WH.DeleteNick(name)
+        if nick == -1:
+            self.perror("Nick does not exist")
+            self.poutput("Try <nick list> to get a list of nicks")
+            return None
+        else:
+            self.poutput("Nick: %s with Address: %s deleted" % (nick, addr))
+            return None
+
+    def nick_list(self):
+        nicks = self.current_WH.ListNicks()
+        if len(nicks) == 0:
+            self.poutput("There are no nicks. To create one, try <nick create>")
+
+        for nick in nicks:
+            print ("Nick: %s - Address: %s" % (nick, nicks[nick]))
 
         return None
 

@@ -1,4 +1,5 @@
 from pathlib import Path
+from json import load, dump, JSONDecodeError
 
 from web3 import Web3
 from eth_account import Account
@@ -48,6 +49,40 @@ class WalletHandler(Wallet):
 
         return True
 
+    def CreateNick(self, nick : str, address : str):
+        nicks = self.ListNicks()
+        if nick in nicks:
+            return -1
+        if Web3().isAddress(address) == False:
+            return -2
+
+        nicks[nick] = address
+        with open(self.nickfile_path, 'w') as F:
+            dump(nicks, F)
+        return 1
+
+    def DeleteNick(self, nick : str):
+        nicks = self.ListNicks()
+        if nick not in nicks:
+            return -1, -1
+
+        addr = nicks.pop(nick)
+        with open(self.nickfile_path, 'w') as F:
+            dump(nicks, F)
+        return (nick, addr)
+
+    def ListNicks(self):
+        try:
+            nick = None
+            with open(self.nickfile_path, 'r') as F:
+                nicks = load(F)
+            return nicks
+        except FileNotFoundError:
+            self.nickfile_path.touch()
+            return {}
+        except JSONDecodeError:
+            return {}
+
 
 class WalletUtils:
     def __init__(self, meta_dir : Path):
@@ -59,10 +94,11 @@ class WalletUtils:
 
         for wallet_dir in wallet_dirs:
             name = [x.name.split(".")[0]                                       \
-                for x in wallet_dir.glob("*") if x.is_file()]
+                for x in wallet_dir.glob("*.IceCereum-Wallet.json")            \
+                                                            if x.is_file()]
 
             assert len(name) == 1,                                             \
-                "wallet directory " +wallet_dir+ " has "+ str(name) +          \
+                "wallet directory " +str(wallet_dir)+ " has "+ str(name) +     \
                 " values, expected only one"
 
             wallet_names.append(name[0])

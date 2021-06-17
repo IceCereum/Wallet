@@ -41,9 +41,9 @@ class Wallet:
         return h
 
     @property
-    def aliasfile_path(self):
+    def nickfile_path(self):
         return self.generic_path /                                             \
-            Path(self.wallet_name + ".IceCereum-Aliases.json")
+            Path(self.wallet_name + ".IceCereum-Nicks.json")
 
     @property
     def walletfile_path(self):
