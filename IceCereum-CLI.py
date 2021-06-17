@@ -2,7 +2,7 @@ import cmd2, sys, os, requests
 from typing import List
 from pathlib import Path
 from getpass import getpass
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawTextHelpFormatter
 from requests.exceptions import ConnectionError
 
 from web3 import Web3
@@ -240,24 +240,29 @@ class IceCereumCLI(cmd2.Cmd):
     nick_parser = ArgumentParser()
     nick_subparser = nick_parser.add_subparsers(dest="nickaction")
 
-    nick_create = nick_subparser.add_parser("create")
+    nick_create = nick_subparser.add_parser("create", aliases=["add"])
     nick_create.add_argument("name", type=str)
     nick_create.add_argument("address", type=str)
 
-    nick_delete = nick_subparser.add_parser("delete")
+    nick_delete = nick_subparser.add_parser("delete", aliases=["del"])
     nick_delete.add_argument("name", type=str)
+
+    nick_info = nick_subparser.add_parser("info")
+    nick_info.add_argument("name", type=str)
 
     nick_subparser.add_parser("list")
 
     @cmd2.with_argparser(nick_parser)
     @wallet_loaded
     def do_nick(self, args):
-        if args.nickaction == "list":
-            self.nick_list()
-        elif args.nickaction == "create":
+        if args.nickaction == "create":
             self.nick_create(args.name, args.address)
         elif args.nickaction == "delete":
             self.nick_delete(args.name)
+        elif args.nickaction == "info":
+            self.nick_info(args.name)
+        elif args.nickaction == "list":
+            self.nick_list()
 
         return None
 
@@ -271,6 +276,18 @@ class IceCereumCLI(cmd2.Cmd):
             self.perror("Supplied address is not a valid address")
             self.poutput("Verify that the address you supplied is correct")
             return None
+        elif retval == -3:
+            self.perror("Supplied nick is an IceCereum address")
+            self.poutput("Uh... Did you get your order mixed up?")
+            self.poutput("It's nick create <nick_name> <address>")
+            self.poutput("You can't enter an address for <nick_name>")
+            self.poutput("That would ... break logic")
+            return None
+        elif retval == -4:
+            self.perror("Supplied address is your address")
+            self.poutput("Are you trying to nick your own self?")
+            self.poutput("Yeah ... we can't let that happen now, can we?")
+            return None
         elif retval == 1:
             self.poutput("Nick created!")
             return None
@@ -283,6 +300,17 @@ class IceCereumCLI(cmd2.Cmd):
             return None
         else:
             self.poutput("Nick: %s with Address: %s deleted" % (nick, addr))
+            return None
+
+    def nick_info(self, name : str):
+        nicks = self.current_WH.ListNicks()
+        if name not in nicks:
+            self.perror("Nick does not exist")
+            self.poutput("Try <nick list> to get a list of nicks")
+            return None
+        else:
+            self.poutput("Nick Info - Name: %s - Address: %s" %                \
+                                                (name, nicks[name]))
             return None
 
     def nick_list(self):
@@ -356,7 +384,9 @@ class IceCereumCLI(cmd2.Cmd):
             amount = input("Enter Amount to Send (minimum 0.01): ")
             message = input("Enter message (for transaction history): ")
 
-        self.validate_transfer_args(to_address, amount, message)
+        stat = self.validate_transfer_args(to_address, amount, message)
+        if stat != 1:
+            return None
 
         # Refer to NOTE of the protocol described above
         session = requests.Session()
@@ -494,15 +524,17 @@ class IceCereumCLI(cmd2.Cmd):
 
 
     def validate_transfer_args(self, to_address, amount, message):
-        # TODO: fix aliases
-        aliases = {}
-        if to_address in aliases:
-            pass
-        elif Web3().isAddress(to_address):
-            pass
-        else:
-            self.perror("Invalid Address! The TO_ADDRESS provided is neither " \
-                "in aliases nor a valid IceCereum address.")
+        nicks = self.current_WH.ListNicks()
+        if to_address in nicks:
+            to_address = nicks[to_address]
+
+        if not Web3().isAddress(to_address):
+            self.perror("Invalid Address Supplied!")
+            self.poutput("The TO_ADDRESS provided is not a valid IceCereum "   \
+                "Address. If your TO_ADDRESS is a nick, you may have an "      \
+                "invalid address in your nicks file. Try <nick list> to get "  \
+                "a list of all your nicks and check the address of the nick "  \
+                "you supplied")
             return -1
 
         try:
