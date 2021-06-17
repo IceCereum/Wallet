@@ -55,6 +55,10 @@ class WalletHandler(Wallet):
             return -1
         if Web3().isAddress(address) == False:
             return -2
+        if Web3().isAddress(nick) == True:
+            return -3
+        if address == self.address:
+            return -4
 
         nicks[nick] = address
         with open(self.nickfile_path, 'w') as F:
