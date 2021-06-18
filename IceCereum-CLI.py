@@ -2,15 +2,19 @@ import cmd2, sys, os, requests
 from typing import List
 from pathlib import Path
 from getpass import getpass
-from argparse import ArgumentParser, RawTextHelpFormatter
+from datetime import datetime
+from argparse import ArgumentParser
 from requests.exceptions import ConnectionError
+from colorama import init as colorama_init, Fore, Style
 
 from web3 import Web3
 from eth_account import Account
 from eth_account.messages import encode_defunct
 
 from ICN_utils.WalletHandler import WalletHandler, WalletUtils
+
 from ICN_utils.generic.error_utils import *
+from ICN_utils.generic.time_utils import utc_to_local
 
 META_DIR = Path("IceCereum-Meta")
 # NETWORK = "https://icecereum.icecereal.me:4500"
@@ -227,12 +231,51 @@ class IceCereumCLI(cmd2.Cmd):
 
         return None
 
-    # transactions_parser = ArgumentParser()
-    # transactions_parser.add_argument("-nsync", "--no-sync", action="store_true", required=False)
+    @cmd2.with_argument_list
+    @wallet_loaded
+    def do_transactions(self, args):
+        sent_tx = self.current_WH.get_sendfile()
+        recv_tx = self.current_WH.get_receivedfile()
 
+        transactions =[]
+        for tx in sent_tx:
+            t = sent_tx[tx]["time"]
+            datetime.strptime(t, "%Y-%m-%d %H:%M:%S.%f")
+            transactions.append((t, "sent", sent_tx[tx]))
+
+        for tx in recv_tx:
+            t = recv_tx[tx]["time"]
+            datetime.strptime(t, "%Y-%m-%d %H:%M:%S.%f")
+            transactions.append((t, "recv", recv_tx[tx]))
+
+        transactions.sort()
+        nicks = self.current_WH.ListNicks()
+        nicks = {y:x for x,y in nicks.items()}
+
+        for tx in transactions:
+            if tx[1] == "sent":
+                self.poutput(Fore.YELLOW + Style.BRIGHT + "SENT")
+                name = tx[2]["receiver"]
+            elif tx[1] == "recv":
+                self.poutput(Fore.GREEN + Style.BRIGHT + "RECEIVED")
+                name = tx[2]["sender"]
+
+            if name in nicks:
+                name = str((nicks[name], name))
+
+            self.poutput("  From: %s" % name)
+            self.poutput("  Amount: %f" % float(tx[2]["amount"]))
+            self.poutput("  Mining Fee: %f" % float(tx[2]["mining_fee"]))
+            self.poutput("  Final Amount: %f" % float(tx[2]["total_amount"]))
+            self.poutput("  Time: %s (UTC) %s (Local)" %                   \
+                            (tx[2]["time"], utc_to_local(tx[2]["time"])) )
+            self.poutput("  Message: %s" % tx[2]["message"])
+
+        return None
 
     sync_parser = ArgumentParser()
-    sync_parser.add_argument("-nmsg", "--no-message", action="store_true", required=False)
+    sync_parser.add_argument("-nmsg", "--no-message", action="store_true",
+                                                                required=False)
 
     @cmd2.with_argparser(sync_parser)
     @wallet_loaded
@@ -604,7 +647,7 @@ class IceCereumCLI(cmd2.Cmd):
             self.poutput("Transaction added to TXPOOL!")
 
         self.current_WH.log_sendfile(
-            to = to_address,
+            receiver = to_address,
             amount = amount,
             mining_fee = mining_fees,
             total_amount = total_amount,
@@ -643,6 +686,7 @@ class IceCereumCLI(cmd2.Cmd):
 
 
 if __name__ == '__main__':
+    colorama_init(autoreset=True)
     c = IceCereumCLI()
     sys.exit(c.cmdloop())
     # wu = WalletUtils(meta_dir = META_DIR)
