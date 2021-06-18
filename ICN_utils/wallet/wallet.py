@@ -1,5 +1,5 @@
 from pathlib import Path
-from json import load, dump, dumps
+from json import load, dump, dumps, JSONDecodeError
 
 from web3 import Web3
 from eth_account import Account
@@ -17,16 +17,16 @@ class Wallet:
             return self._address
         except:
             self._address = "0x" + self.get_raw_data()["address"]
-            return self._address
+            return self._address.lower()
 
     @address.setter
     def address(self, address : str):
         assert Web3().isAddress(address) == True,                              \
                         "address supplied is not valid"
         if address.startswith("0x"):
-            self._address = address
+            self._address = address.lower()
         else:
-            self._address = "0x" + address
+            self._address = "0x" + address.lower()
 
     @property
     def generic_path(self):
@@ -35,9 +35,13 @@ class Wallet:
         return p
 
     @property
-    def hist_path(self):
-        h = self.generic_path / Path(self.wallet_name + "-History/")
-        h.mkdir(parents=True, exist_ok=True)
+    def history_sendfile_path(self):
+        h = self.generic_path / Path(self.wallet_name + "-tx-outgoing.json")
+        return h
+
+    @property
+    def history_receivedfile_path(self):
+        h = self.generic_path / Path(self.wallet_name + "-tx-incoming.json")
         return h
 
     @property
@@ -61,9 +65,18 @@ class Wallet:
             F.write(dumps(encrypted_data))
         return True
 
-    def log_histfile(self, **kwargs):
-        n_files = len(list(self.hist_path.glob('*')))
-        filename = self.hist_path / Path(str(n_files).zfill(3) + ".json")
+    def log_sendfile(self, **kwargs):
+        send_json = None
+        try:
+            with open(self.history_sendfile_path, 'r') as F:
+                send_json = load(F)
+        except FileNotFoundError:
+            self.history_sendfile_path.touch()
+            send_json = {}
+        except JSONDecodeError:
+            send_json =  {}
+
+        index = len(send_json)
 
         output = {
             "time" : time_now()
@@ -72,7 +85,60 @@ class Wallet:
         for key in kwargs:
             output[key] = kwargs.get(key)
 
-        with open(filename, 'w') as F:
-            dump(output, F, indent=2)
+        send_json[index] = output
 
-        return None
+        with open(self.history_sendfile_path, 'w') as F:
+            dump(send_json, F, indent=2)
+
+        return
+
+    def log_recvfile(self, **kwargs):
+        recv_json = None
+        try:
+            with open(self.history_receivedfile_path, 'r') as F:
+                recv_json = load(F)
+        except FileNotFoundError:
+            self.history_receivedfile_path.touch()
+            recv_json = {}
+        except JSONDecodeError:
+            recv_json =  {}
+
+        index = len(recv_json)
+
+        output = {
+            "time" : time_now()
+        }
+
+        for key in kwargs:
+            output[key] = kwargs.get(key)
+
+        recv_json[index] = output
+
+        with open(self.history_receivedfile_path, 'w') as F:
+            dump(recv_json, F, indent=2)
+
+        return
+
+    def get_sendfile(self):
+        try:
+            with open(self.history_sendfile_path, 'r') as F:
+                send_json = load(F)
+        except FileNotFoundError:
+            self.history_sendfile_path.touch()
+            send_json = {}
+        except JSONDecodeError:
+            send_json =  {}
+
+        return send_json
+
+    def get_receivedfile(self):
+        try:
+            with open(self.history_receivedfile_path, 'r') as F:
+                recv_json = load(F)
+        except FileNotFoundError:
+            self.history_receivedfile_path.touch()
+            recv_json = {}
+        except JSONDecodeError:
+            recv_json =  {}
+
+        return recv_json

@@ -136,9 +136,6 @@ class IceCereumCLI(cmd2.Cmd):
         self.poutput("Wallet Address: %s" % self.current_WH.address)
         self.poutput("\nDo NOT share the 12 words or the wallet file")
 
-
-        self.current_WH.log_histfile(created = True)
-
         return None
 
     def load_wallet(self, wallet_name : str):
@@ -190,10 +187,7 @@ class IceCereumCLI(cmd2.Cmd):
         self.poutput("If this address is not the same as your previous address"\
             ", you may have entered the words incorrectly or out of order.")
 
-        self.current_WH.log_histfile(created=True, restored=True)
-
         return None
-
 
     # TODO: deletewallet
 
@@ -233,6 +227,99 @@ class IceCereumCLI(cmd2.Cmd):
 
         return None
 
+    # transactions_parser = ArgumentParser()
+    # transactions_parser.add_argument("-nsync", "--no-sync", action="store_true", required=False)
+
+
+    sync_parser = ArgumentParser()
+    sync_parser.add_argument("-nmsg", "--no-message", action="store_true", required=False)
+
+    @cmd2.with_argparser(sync_parser)
+    @wallet_loaded
+    def do_sync(self, args):
+        init_json = {
+            "address" : self.current_WH.address
+        }
+
+        init_response = None
+        try:
+            init_response = requests.get(NETWORK + "/get-transactions",
+                                                            json = init_json)
+        except ConnectionError as e:
+            errormessage(
+                self, "Unable to connect to the IceCereum Network.",
+                "> Do you have an active internet connection?",
+                "> Could you check if the IceCereum Network is down?",
+                exception=e)
+            return None
+
+        init_response_json = init_response.json()
+        if init_response_json["success"] == False:
+            errormessage(
+                self, "GET NETWORK/get-transactions returned:",
+                init_response_json["message"], "Init JSON",
+                [init_json])
+            return None
+
+        if init_response_json["exists"] == False:
+            self.poutput("This wallet's address does not exist on the "        \
+                            "IceCereum Network.")
+            return None
+
+        send_tx = self.current_WH.get_sendfile()
+        recv_tx = self.current_WH.get_receivedfile()
+
+        server_send_tx = {}
+        server_recv_tx = {}
+
+        for server_tx in init_response_json["transactions"]:
+            tx_data = init_response_json["transactions"][server_tx]
+            if tx_data["type"] == "send":
+                server_send_tx[len(server_send_tx)] = tx_data
+            elif tx_data["type"] == "receive":
+                server_recv_tx[len(server_recv_tx)] = tx_data
+
+        # At the moment, we assume that a person has a wallet only on one device
+        # and they don't use the same account on other devices. So I'm not
+        # syncing send (because of server received timestamps and client sent
+        # timestamps)
+        if len(server_recv_tx) == len(recv_tx):
+            self.poutput("Sync complete! No new transactions were added")
+            return None
+
+        for i in range(len(recv_tx), len(server_recv_tx)):
+            sender = str(server_recv_tx[i]["sendr_addr"])
+            amount = str(server_recv_tx[i]["value"])
+            mining_fee = str(server_recv_tx[i]["mining_fee"])
+            total_amount = str(server_recv_tx[i]["final_value"])
+            in_txpool = str(server_recv_tx[i]["in_txpool"])
+
+            msg = ""
+            if not args.no_message:
+                self.poutput("Received Transaction:")
+                self.poutput("  sender: %s" % sender)
+                self.poutput("  amount: %s" % amount)
+                self.poutput("  mining_fee: %s" % mining_fee)
+                self.poutput("  total_amount: %s" % total_amount)
+                self.poutput("  in_txpool: %s" % in_txpool)
+
+                if sender == "IceCereum-Rewards":
+                    msg = "IceCereum Rewards"
+                    self.poutput("  Congratulations! You got a reward!")
+                else:
+                    msg = input("  Enter message (blank for no message): ")
+
+            self.current_WH.log_recvfile(
+                sender = sender,
+                amount = amount,
+                mining_fee = mining_fee,
+                total_amount = total_amount,
+                message = msg
+            )
+
+        self.poutput("Sync complete!")
+        return None
+
 
     ############################################################################
     ############################### NICK UTILS #################################
@@ -255,7 +342,7 @@ class IceCereumCLI(cmd2.Cmd):
     @cmd2.with_argparser(nick_parser)
     @wallet_loaded
     def do_nick(self, args):
-        if args.nickaction == "create":
+        if args.nickaction == "create" or args.nickaction == "add":
             self.nick_create(args.name, args.address)
         elif args.nickaction == "delete":
             self.nick_delete(args.name)
@@ -384,9 +471,13 @@ class IceCereumCLI(cmd2.Cmd):
             amount = input("Enter Amount to Send (minimum 0.01): ")
             message = input("Enter message (for transaction history): ")
 
-        stat = self.validate_transfer_args(to_address, amount, message)
+        stat, v_args = self.validate_transfer_args(to_address, amount, message)
         if stat != 1:
             return None
+
+        to_address = v_args[0]
+        amount = v_args[1]
+        message = v_args[2]
 
         # Refer to NOTE of the protocol described above
         session = requests.Session()
@@ -427,10 +518,10 @@ class IceCereumCLI(cmd2.Cmd):
                                                                str(mining_fees))
         self.poutput("The total amount transferred will be %f + %f = %f"       \
             % (amount, mining_fees, total_amount))
-        self.poutput("Type y/n continue transferring: %f", total_amount)
+        self.poutput("Type yes/no continue transferring: %f" % total_amount)
 
         confirm = input()
-        if confirm not in ["Y", "y"]:
+        if confirm.lower() not in ["yes"]:
             self.poutput("Transaction cancelled")
             return None
 
@@ -512,7 +603,7 @@ class IceCereumCLI(cmd2.Cmd):
         else:
             self.poutput("Transaction added to TXPOOL!")
 
-        self.current_WH.log_histfile(
+        self.current_WH.log_sendfile(
             to = to_address,
             amount = amount,
             mining_fee = mining_fees,
@@ -535,7 +626,7 @@ class IceCereumCLI(cmd2.Cmd):
                 "invalid address in your nicks file. Try <nick list> to get "  \
                 "a list of all your nicks and check the address of the nick "  \
                 "you supplied")
-            return -1
+            return (-1, ())
 
         try:
             amount = float(amount)
@@ -543,14 +634,12 @@ class IceCereumCLI(cmd2.Cmd):
                 raise AssertionError
         except ValueError:
             self.perror("Invalid Amount! The amount entered is not a number.")
-            return -1
+            return (-1, ())
         except AssertionError:
             self.perror("The minimum transferable amount is 0.01")
-            return -1
+            return (-1, ())
 
-        return 1
-
-
+        return (1, (to_address, amount, message))
 
 
 if __name__ == '__main__':

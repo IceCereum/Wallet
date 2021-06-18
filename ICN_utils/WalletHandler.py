@@ -77,7 +77,6 @@ class WalletHandler(Wallet):
 
     def ListNicks(self):
         try:
-            nick = None
             with open(self.nickfile_path, 'r') as F:
                 nicks = load(F)
             return nicks
