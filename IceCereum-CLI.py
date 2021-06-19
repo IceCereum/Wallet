@@ -11,11 +11,11 @@ from web3 import Web3
 from eth_account import Account
 from eth_account.messages import encode_defunct
 
-from ICN_utils.WalletHandler import WalletHandler, WalletUtils
+from utils.WalletHandler import WalletHandler, WalletUtils
 
-from ICN_utils.updater.update import *
-from ICN_utils.generic.error_utils import *
-from ICN_utils.generic.time_utils import utc_to_local
+from utils.updater.update import *
+from utils.generic.error_utils import *
+from utils.generic.time_utils import utc_to_local
 
 META_DIR = Path("IceCereum-Meta")
 RES_DIR = Path("res")
