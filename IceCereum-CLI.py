@@ -22,6 +22,13 @@ RES_DIR = Path("res")
 NETWORK = "https://icecereum.icecereal.me:4500"
 VERSION = "0.1.0-Beta"
 
+def res_dir():
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return Path(base_path) / Path("res")
+
 class IceCereumCLI(cmd2.Cmd):
     CMD_CAT_INFO = "Information"
     CMD_CAT_WALLET = "Wallet"
@@ -70,7 +77,7 @@ class IceCereumCLI(cmd2.Cmd):
 
             usage: info
         """
-        with open(RES_DIR / Path("info.txt"), 'r') as F:
+        with open(res_dir() / Path("info.txt"), 'r') as F:
             info = F.readlines()
 
         blocks = info.count("---\n")
@@ -97,7 +104,7 @@ class IceCereumCLI(cmd2.Cmd):
 
             usage: shortinfo
         """
-        with open(RES_DIR / Path("shortinfo.txt"), 'r') as F:
+        with open(res_dir() / Path("shortinfo.txt"), 'r') as F:
             shortinfo = F.read()
 
         self.poutput(shortinfo)
