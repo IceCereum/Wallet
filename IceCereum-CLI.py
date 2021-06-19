@@ -1,5 +1,4 @@
 import cmd2, sys, os, requests
-from typing import List
 from pathlib import Path
 from getpass import getpass
 from datetime import datetime
@@ -13,12 +12,13 @@ from eth_account.messages import encode_defunct
 
 from ICN_utils.WalletHandler import WalletHandler, WalletUtils
 
+from ICN_utils.updater.update import *
 from ICN_utils.generic.error_utils import *
 from ICN_utils.generic.time_utils import utc_to_local
 
 META_DIR = Path("IceCereum-Meta")
-# NETWORK = "https://icecereum.icecereal.me:4500"
-NETWORK = "http://127.0.0.1:4500"
+NETWORK = "https://icecereum.icecereal.me:4500"
+VERSION = "0.1.0-Beta"
 
 class IceCereumCLI(cmd2.Cmd):
     """A simple cmd2 application."""
@@ -223,7 +223,7 @@ class IceCereumCLI(cmd2.Cmd):
             return None
 
         if response["exists"] == False:
-            self.poutput("The requested address has no transactions on the"    \
+            self.poutput("The requested address has no transactions on the "   \
                 "IceCereum Network")
             return None
 
@@ -687,7 +687,38 @@ class IceCereumCLI(cmd2.Cmd):
 
 if __name__ == '__main__':
     colorama_init(autoreset=True)
+
+    avail, new_version, url, info = check_update(VERSION)
+
+    if avail:
+        print (Fore.YELLOW + "There is an update available")
+        print ("Current Version: %s" % VERSION)
+        print ("Available Version: %s" % new_version)
+        print ("Update Info: %s" % info)
+
+        print (Fore.YELLOW + "\nSince this is a program that deals with "      \
+            "cryptocurrency, it is always strongly recommended to be on the "  \
+            "latest available version")
+
+        choice = input("Do you want to update this wallet? (yes/no): ")
+        if choice.lower().lstrip(" ").rstrip(" ") == "yes":
+            print ("This update should NOT affect your wallet files.")
+            print ("However, MAKE SURE TO BACKUP YOUR WALLET!")
+            print ("This can be done by copying %s to another directory" 
+                                                                % str(META_DIR))
+
+            choice = input("Are you ready to update? (yes/no): ")
+
+            if choice.lower().lstrip(" ").rstrip(" ") == "yes":
+                file_name = update_wallet(url)
+                print ("The new program is called: %s" % file_name)
+                print ("This program will now close and you can delete this "  \
+                    "program")
+                _ = input("(Enter)")
+                sys.exit()
+
+        print ("Operation cancelled")
+        print ("This program will continue as normal")
+
     c = IceCereumCLI()
     sys.exit(c.cmdloop())
-    # wu = WalletUtils(meta_dir = META_DIR)
-    # wu.list_wallets()
