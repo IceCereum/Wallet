@@ -1,0 +1,6 @@
+tqdm==4.60.0
+eth_account==0.5.4
+colorama==0.4.3
+cmd2==2.1.0
+web3==5.20.0
+requests==2.25.1
