@@ -1,0 +1,14 @@
+- To see a list of your wallets, type "wallet list"
+- To load your wallet in, type "wallet load <wallet_name>
+- To see a list of your nicks, type "nick list"
+- To transfer some funds, type "transfer" (for interactive) or
+"transfer -to <to_addr> -a <amount> -msg 'message about transaction'
+- To see your balance, type "balance"
+- To sync your transactions, type "sync"; If you have new transactions, you
+will have to enter a message for each new one.
+- To see your transactions, type "transactions"
+
+- To get all commands, type "help"
+- To get help about a particular command, type "help <command>"
+
+- To quit, type "quit"

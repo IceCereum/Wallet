@@ -1,6 +1,7 @@
 import cmd2, sys, os, requests
 from pathlib import Path
 from getpass import getpass
+from functools import wraps
 from datetime import datetime
 from argparse import ArgumentParser
 from requests.exceptions import ConnectionError
@@ -17,11 +18,15 @@ from ICN_utils.generic.error_utils import *
 from ICN_utils.generic.time_utils import utc_to_local
 
 META_DIR = Path("IceCereum-Meta")
+RES_DIR = Path("res")
 NETWORK = "https://icecereum.icecereal.me:4500"
 VERSION = "0.1.0-Beta"
 
 class IceCereumCLI(cmd2.Cmd):
-    """A simple cmd2 application."""
+    CMD_CAT_INFO = "Information"
+    CMD_CAT_WALLET = "Wallet"
+    CMD_CAT_ACCTSTAT = "Account Stats"
+    CMD_CAT_NICKS = "Nicks / Aliases"
 
     def __init__(self):
         disable =['do_edit', 'do_ipy', 'do_py', 'do_run_pyscript',
@@ -29,17 +34,82 @@ class IceCereumCLI(cmd2.Cmd):
         for plugin in disable:
             delattr(cmd2.Cmd, plugin)
 
+        self.intro = "Welcome to the IceCereum Network CLI!\n\n"               \
+                     "If this is your first time, type info\n"                 \
+                     "If you need a quick recap, type shortinfo\n"             \
+                     "For a list of commands, type help"
+
         super().__init__()
         self.hidden_commands.append('alias')
         self.hidden_commands.append('macro')
 
-        self.prompt = "IceCereum-CLI> "
+        self.prompt = "\nIceCereum-CLI> "
         self.current_WH = None
+        self.register_postloop_hook(self.outro)
+
+    def outro(self) -> None:
+        print ("Thanks for being a part of the IceCereum Network!")
+        return None
+
+    @cmd2.with_argument_list
+    def do_exit(self, args):
+        """
+            exit the program
+        """
+        return -1
+
+    ############################################################################
+    ############################### INFORMATION ################################
+    ############################################################################
+    @cmd2.with_argument_list
+    @cmd2.with_category(CMD_CAT_INFO)
+    def do_info(self, args):
+        """
+            Briefly-detailed introduction to this program and the IceCereum
+            Network
+
+            usage: info
+        """
+        with open(RES_DIR / Path("info.txt"), 'r') as F:
+            info = F.readlines()
+
+        blocks = info.count("---\n")
+
+        block = "\n"
+        block_number = 1
+        for line in info:
+            if line.startswith("---"):
+                self.poutput(block)
+                _ = input("[Hit Enter] (%d/%d)" % (block_number, blocks) )
+                block = "\n"
+                block_number += 1
+            else:
+                block += line
+        self.poutput(block + "\n\n")
+
+        return None
+
+    @cmd2.with_argument_list
+    @cmd2.with_category(CMD_CAT_INFO)
+    def do_shortinfo(self, args):
+        """
+            A short re-introduction to the IceCereum-CLI program and it's usage
+
+            usage: shortinfo
+        """
+        with open(RES_DIR / Path("shortinfo.txt"), 'r') as F:
+            shortinfo = F.read()
+
+        self.poutput(shortinfo)
+
+        return None
+
 
     ############################################################################
     ################################ VALIDATORS ################################
     ############################################################################
     def wallet_loaded(function):
+        @wraps(function)
         def wrapper(self, *args):
             if self.current_WH == None:
                 self.perror("No wallet is currently loaded")
@@ -55,25 +125,28 @@ class IceCereumCLI(cmd2.Cmd):
     wallet_parser = ArgumentParser()
     wp_subparser = wallet_parser.add_subparsers(dest="walletaction")
 
-    wp_create = wp_subparser.add_parser("create")
-    wp_create.add_argument("wallet_name", type=str)
+    wp_create = wp_subparser.add_parser("create", help="create a new wallet")
+    wp_create.add_argument("wallet_name", type=str, help="name of the wallet")
 
-    wp_load = wp_subparser.add_parser("load")
-    wp_load.add_argument("wallet_name", type=str)
+    wp_load = wp_subparser.add_parser("load", help="load an existing wallet")
+    wp_load.add_argument("wallet_name", type=str, help="name of the wallet")
 
-    wp_restore = wp_subparser.add_parser("restore")
-    wp_restore.add_argument("wallet_name", type=str)
+    wp_restore = wp_subparser.add_parser("restore", help="restore a wallet; "  \
+        "enter the 12 words IN ORDER at each prompt")
+    wp_restore.add_argument("wallet_name", type=str, help="name of the wallet")
 
-    wp_delete = wp_subparser.add_parser("delete")
-    wp_delete.add_argument("wallet_name", type=str)
-
-    wp_subparser.add_parser("list")
+    wp_subparser.add_parser("list", help="list all wallets")
 
     @cmd2.with_argparser(wallet_parser)
+    @cmd2.with_category(CMD_CAT_WALLET)
     def do_wallet(self, args):
-        """Create a newly generated wallet with a random 12 seed mnemonic
+        """
+        Wallet command that carries out necessary subcommands.
 
-        Usage: CreateNewWallet <wallet_name>
+        When attempting to restore a wallet, the 12 words must be entered
+        IN ORDER at each prompt. Failure to do so will result in a totally
+        different wallet being generated. Try "help wallet <subcommand>" for
+        more detail about the usage of the subcommand.
         """
         if args.walletaction == "create":
             self.create_wallet(args.wallet_name)
@@ -198,14 +271,26 @@ class IceCereumCLI(cmd2.Cmd):
     ############################## ACCOUNT TOOLS ###############################
     ############################################################################
     @cmd2.with_argument_list
+    @cmd2.with_category(CMD_CAT_ACCTSTAT)
     @wallet_loaded
     def do_address(self, args):
+        """
+            Prints out the address of the loaded wallet
+
+            usage: address
+        """
         self.poutput("Address - Wallet %s: %s"                                 \
             % (self.current_WH.wallet_name, self.current_WH.address))
 
     @cmd2.with_argument_list
+    @cmd2.with_category(CMD_CAT_ACCTSTAT)
     @wallet_loaded
     def do_balance(self, args):
+        """
+            Queries the network for the balance of the loaded wallet
+
+            usage: balance
+        """
         init_json = {
             "sendr_addr" : self.current_WH.address
         }
@@ -240,8 +325,15 @@ class IceCereumCLI(cmd2.Cmd):
         return None
 
     @cmd2.with_argument_list
+    @cmd2.with_category(CMD_CAT_ACCTSTAT)
     @wallet_loaded
     def do_transactions(self, args):
+        """
+            Prints out a list of transactions stored locally on the device.
+            NOTE: This does NOT sync with the network; use 'sync' for that.
+
+            usage: transactions
+        """
         sent_tx = self.current_WH.get_sendfile()
         recv_tx = self.current_WH.get_receivedfile()
 
@@ -283,11 +375,19 @@ class IceCereumCLI(cmd2.Cmd):
 
     sync_parser = ArgumentParser()
     sync_parser.add_argument("-nmsg", "--no-message", action="store_true",
-                                                                required=False)
+                required=False, help="set message to blank by default")
 
     @cmd2.with_argparser(sync_parser)
+    @cmd2.with_category(CMD_CAT_ACCTSTAT)
     @wallet_loaded
     def do_sync(self, args):
+        """
+            Syncs local files with the network for a list of transactions that
+            the loaded wallet received. At the moment, this program assumes that
+            you will not have one wallet across multiple machines so sent
+            transactions are NOT synced. Only transactions that are received
+            but not stored in storage will be added.
+        """
         init_json = {
             "address" : self.current_WH.address
         }
@@ -378,24 +478,33 @@ class IceCereumCLI(cmd2.Cmd):
     nick_parser = ArgumentParser()
     nick_subparser = nick_parser.add_subparsers(dest="nickaction")
 
-    nick_create = nick_subparser.add_parser("create", aliases=["add"])
-    nick_create.add_argument("name", type=str)
-    nick_create.add_argument("address", type=str)
+    nick_create = nick_subparser.add_parser("create", aliases=["add"],
+        help="create a nick")
+    nick_create.add_argument("name", type=str, help="name for the nick")
+    nick_create.add_argument("address", type=str, help="address of the nick")
 
-    nick_delete = nick_subparser.add_parser("delete", aliases=["del"])
-    nick_delete.add_argument("name", type=str)
+    nick_delete = nick_subparser.add_parser("delete", aliases=["del"],
+        help="delete a nick")
+    nick_delete.add_argument("name", type=str, help="name for the nick")
 
-    nick_info = nick_subparser.add_parser("info")
-    nick_info.add_argument("name", type=str)
+    nick_info = nick_subparser.add_parser("info",
+        help="information about a particular nick")
+    nick_info.add_argument("name", type=str, help="name for the nick")
 
-    nick_subparser.add_parser("list")
+    nick_subparser.add_parser("list", help="list all nicks")
 
     @cmd2.with_argparser(nick_parser)
+    @cmd2.with_category(CMD_CAT_NICKS)
     @wallet_loaded
     def do_nick(self, args):
+        """
+            Create nicks to act as aliases for other users' addresses instead
+            of typing out the address entirely. Try "help nick <subcommand>" for
+            more detail about the usage of the subcommand.
+        """
         if args.nickaction == "create" or args.nickaction == "add":
             self.nick_create(args.name, args.address)
-        elif args.nickaction == "delete":
+        elif args.nickaction == "delete" or args.nickaction == "del":
             self.nick_delete(args.name)
         elif args.nickaction == "info":
             self.nick_info(args.name)
@@ -492,14 +601,37 @@ class IceCereumCLI(cmd2.Cmd):
 
         5. POST (/transfer-funds, json(POST_JSON))
     """
-    transfer_parser = ArgumentParser()
-    transfer_parser.add_argument("-to", "--to-address", type=str, required=False)
-    transfer_parser.add_argument("-a", "--amount", type=float, required=False)
-    transfer_parser.add_argument("-msg", "--message", type=str, required=False)
+    transfer_parser = ArgumentParser(epilog="NOTE: The to_address can be a "   \
+                                           "nick instead of the entire address")
+    transfer_parser.add_argument("-to", "--to-address", type=str, 
+        required=False, help="to address (can be an address or a nick)")
+    transfer_parser.add_argument("-a", "--amount", type=float, required=False,
+        help="amount to send")
+    transfer_parser.add_argument("-msg", "--message", type=str, required=False,
+        help="message to remember this transaction for. Leave blank for none.")
 
     @cmd2.with_argparser(transfer_parser)
+    @cmd2.with_category(CMD_CAT_WALLET)
     @wallet_loaded
     def do_transfer(self, *args):
+        """
+            Transfer funds to another address on the IceCereum Network.
+
+            Before you transfer the funds, you will be shown what the network's
+            mining fees are and what the total amount you that you will be
+            sending. Confirm that you are okay to transfer the funds and enter
+            the password after being prompted to transfer funds.
+
+            There are two ways this can be done: Interactive Mode and
+            Non-Interactive Mode.
+
+            In Interactive Mode,
+                enter the to-address, amount, and message after every prompt.
+            In Non-Interactive Mode,
+                usage: transfer -to <to_address> -a <amount> -msg <"message">
+
+            NOTE: The to_address can be a nick instead of the entire address
+        """
         args = args[0]
 
         to_address = None

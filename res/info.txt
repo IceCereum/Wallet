@@ -1,0 +1,82 @@
+IceCereum is a private cryptocurrency created by IceCereal for the absolute heck
+of it. Over a span of three days, the entire blockchain and cryptocurrency was
+made that conforms most of what you would expect to see in an proper
+crytpocurrency. By design and for practical purposes, there is only one miner.
+Although this seems like a very scuffed cryptocurrency, since it has no fiat
+value you can put trust in the creator that they wont try to scam you into
+stealing your IceCereums. At its heart, IceCereum is a cryptocurrency with
+liberties taken while writing the code. But do not be mistaken, it is a proper
+blockchain that runs on the interwebs.
+---
+To create a wallet, type the command "wallet create <wallet_name>". Give your
+wallet a name that you will easily recognise. You will be shown 12 words which
+will never be shown again. In the event you lost your wallet file, these 12
+words will help you restore your wallet. NEVER SHARE these 12 words with anyone.
+Standard procedures involve you writing these 12 words down on a piece of paper
+and air-gapping that piece of paper. In the event you lose both your wallet
+file AND your 12 words, your wallet is lost forever and there is nothing that
+can be done about that. You can also do "wallet list" to get a list of your
+wallets.
+
+> Example: wallet create icy
+---
+When your wallet file is being created, you will be asked to enter a password to
+encrypt it. Do not use your standard password because this code does not
+implement any security measures against Side Channel Attacks, KeyLoggers or any
+sort of Hacks on your RAM, Cache or Storage Devices. You will have to remember
+this password in order to sign messages that authenticate your transaction /
+transfer of funds. Failure to remember the password is not an issue. You can
+always restore your wallet provided you have the 12 words written down
+somewhere by typing "wallet restore <wallet_name>". If you are in this
+situation, type "help wallet" to proceed from there.
+
+> Example: wallet restore icy
+---
+The generated directory contains all the data required by the program including
+a file which is an encrypted form of your wallet. Do NOT decrypt it on your own
+or share that file to anyone. Once you verify that the folder exists in the same
+folder as this CLI program (which it should be by default), you need to load
+your wallet. Type: "wallet load <wallet_name>", where <wallet_name> is the name
+of the wallet you entered while creating it.
+
+> Example: wallet load icy
+---
+Provided you have enough funds, you can transfer them to an address you want to
+by using the "transfer" command. You can do this in two ways:
+In one command like: "transfer -to <to_address> -a <amount> -msg <message>";
+
+> Example: transfer -to 0x5f808b8001693e23c62ad876e690d399937ea815 -a 15.5 -msg
+> 'Received one diamond from IceCereal'
+
+Or you could do it interactively by just typing "transfer" and filling in the
+prompts the program asks you.
+---
+Now, it's not really easy remembering the addresses of your friends, so a neat
+little option you have is the ability to create nicks by typing "nick create
+<nick_name> <address>". This way, you can just do:
+
+> Example: nick create IceCereal 0x5f808b8001693e23c62ad876e690d399937ea815
+> Example: transfer -to IceCereal -a 15.5 -msg '...'
+
+You can also do "nick list" to get a list of all the nicks you've stored and
+"nick delete" to delete a nick.
+---
+- To check your balance, type "balance"
+- To get a list of your transactions (non-synced), type "transactions"
+- If you want to check if you received any new transactions, type "sync" and
+  you will be asked to enter a message for every new transaction you received
+  since the last time you checked
+---
+- To know what you can do, type "help"
+- To know more info about a command, type "help <command>"
+- To quit, type "quit"
+---
+To read the technical stuff behind IceCereum, visit:
+https://github.com/IceCereum 
+
+To get more info, raise an issue on Github:
+https://github.com/IceCereum/Wallet/issues 
+---
+Coin Name: IceCereum
+Creator: IceCereal
+Usage in a sentence: Will you trade 1 diamond for 5.5 IceCereums?
