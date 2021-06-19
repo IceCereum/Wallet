@@ -26,3 +26,30 @@ def errormessage(cmd_shell, *strings, **kwargs):
             "ns_raghav@hotmail.com and hope that I read your email in time.")
 
     return
+
+def errormessage_generic(*strings, **kwargs):
+    print ("An error was encountered! Error Message:\n")
+
+    print ("Configuration:")
+    # TODO: add more metadata
+    caller = getframeinfo(stack()[1][0])
+    print ("File: " + caller.filename)
+    print ("Func: " + caller.function)
+    print ("Line: " + str(caller.lineno))
+
+    exception = kwargs.get("exception", None)
+    if exception:
+        print ("\n")
+        print ("Complete trace:")
+        print (exception)
+
+    print ("\n")
+    for i in strings:
+        print (i)
+
+    escalated = kwargs.get("escalted", None)
+    if escalated:
+        print ("\nPlease send this Error Message to "                          \
+            "ns_raghav@hotmail.com and hope that I read your email in time.")
+
+    return

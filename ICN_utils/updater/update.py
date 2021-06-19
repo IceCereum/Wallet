@@ -1,7 +1,8 @@
 from tqdm.auto import tqdm
 import functools, shutil, requests, pathlib
 
-upstream = "https://raw.githubusercontent.com/IceCereum/Wallet/main/version.txt"
+# upstream = "https://raw.githubusercontent.com/IceCereum/Wallet/main/version.txt"
+upstream = "http://127.0.0.1:3001/version.txt"
 
 def get_latest_details():
     response = requests.get(url=upstream)
@@ -17,7 +18,7 @@ def check_update(current_version : str):
     version, url, info = get_latest_details()
 
     if version == current_version:
-        return (False, version, url)
+        return (False, version, url, info)
     else:
         return (True, version, url, info)
 

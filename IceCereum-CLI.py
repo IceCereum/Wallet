@@ -211,7 +211,16 @@ class IceCereumCLI(cmd2.Cmd):
             "sendr_addr" : self.current_WH.address
         }
 
-        init_response = requests.get(NETWORK + "/get-balance", json = init_json)
+        try:
+            init_response = requests.get(NETWORK + "/get-balance", json = init_json)
+        except ConnectionError as e:
+            errormessage(
+                self, "Unable to connect to the IceCereum Network.",
+                "> Do you have an active internet connection?",
+                "> Could you check if the IceCereum Network is down?",
+                exception=e)
+            return None
+
         response = init_response.json()
 
         if response["success"] == False:
@@ -688,7 +697,13 @@ class IceCereumCLI(cmd2.Cmd):
 if __name__ == '__main__':
     colorama_init(autoreset=True)
 
-    avail, new_version, url, info = check_update(VERSION)
+    avail = None
+    try:
+        avail, new_version, url, info = check_update(VERSION)
+    except Exception as e:
+        print (Fore.RED + "Update Script Failed!")
+        print ("Exception: %s\n\n" % e)
+        errormessage_generic(Exception=e, escalated=True)
 
     if avail:
         print (Fore.YELLOW + "There is an update available")
