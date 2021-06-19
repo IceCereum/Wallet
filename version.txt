@@ -1,3 +1,3 @@
 0.1.0-Beta
-release_url
-Version Info
+https://github.com/IceCereum/Wallet/releases/download/v0.1.0-beta/IceCereum-CLI-v0.1.0-beta.exe
+First Release (Creates & handles wallets, Creates & handles nicks (aliases), Transfers funds (connects to network), Gets account stats (connects to network), Update Checks). This executable only works for Windows 10. For Linux, MacOS, look at installation instructions in the README.
