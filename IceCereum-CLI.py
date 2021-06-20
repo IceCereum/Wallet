@@ -853,6 +853,11 @@ if __name__ == '__main__':
             "cryptocurrency, it is always strongly recommended to be on the "  \
             "latest available version")
 
+        print ("\n\nIf you installed this from source, you will need to update"\
+            "it the same way you downloaded it. 'git pull origin main' or "    \
+            "download the latest zip file")
+
+        print ("Ignore this if the above is true:")
         choice = input("Do you want to update this wallet? (yes/no): ")
         if choice.lower().lstrip(" ").rstrip(" ") == "yes":
             print ("This update should NOT affect your wallet files.")
