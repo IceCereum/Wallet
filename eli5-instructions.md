@@ -43,15 +43,19 @@ called icecereal.
 
 To transfer funds, you must first have funds. After asking someone (mostly me)
 for funds, you can type `sync` to check if you received any new funds. You will
-have to enter a message - this is for the future you to remember what this
+have to enter a message - this is for the future-you to remember what this
 transaction was for. Once you `sync` and if you see new incoming transactions,
 that means you received funds. Type `balance` to check your balance.
 
 To transfer funds, type `transfer`. You will be asked 3 questions: To, Amount
 and Message. The To field can be an entire address or a nick you assigned two
 paragraphs ago. The amount will have to be a number. The message is for the
-future you to remember what this transaction was for. You will be shown what the
+future-you to remember what this transaction was for. You will be shown what the
 network's current mining fee is - this is the amount you have to pay to the
 network to process the transaction. If you are comfortable with the number, type
 `yes` and enter your password. Let the other person know you sent them coins and
 they can check it up with `sync`.
+
+After you're done reading this, you can read the original
+[README](https://github.com/IceCereum/Wallet/) to understand stuff in more
+detail.
