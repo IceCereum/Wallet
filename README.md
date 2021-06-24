@@ -6,7 +6,7 @@ basic functionality of interacting with the IceCereum Network are complete.
 However, in the event of a new update being available, the wallet should notify
 you that there is a new update.
 
-If you want a barebones, ELI5 instructions, feel free to check out
+If you want a barebones and very simple instructions, feel free to check out
 [The ELI5 instructions](./eli5-instructions.md)
 
 ## Installation Instructions
