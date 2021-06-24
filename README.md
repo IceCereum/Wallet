@@ -22,7 +22,9 @@ be wary of downloading a random exe from off the internet, but eh, you trust me
 
 For MacOS and Linux, I cannot create an executable file because of limitations
 of PyInstaller, the package that is used to generate executables. To do run it
-from source, make sure you have Python3.8+ installed.
+from source, make sure you have Python3.8+ installed. You also need to have
+`python3-dev` installed if you're on Linux (found 
+[here](https://stackoverflow.com/a/21530768)
 
 ```sh
 python3 --version # for MacOS / Linux
