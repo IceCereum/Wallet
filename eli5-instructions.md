@@ -18,6 +18,7 @@ you see the green button that says Code, click on that and choose download zip
 and extract it.
 - Open terminal and [`cd`](https://www.macworld.com/article/221277/master-the-command-line-navigating-files-and-folders.html)
 to the directory where you extracted the zip.
+- Type `python3 -m pip install -r requirements.txt`
 - Type `python3 IceCereum-CLI.py` to run the program
 
 ## Create a wallet, address, transfer funds
